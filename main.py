@@ -1,3 +1,4 @@
+from dataclasses import field
 from typing import Any
 import string
 from fastapi import FastAPI, status, HTTPException
@@ -16,54 +17,90 @@ shipments = {
 app = FastAPI()
 
 
-@app.get("/shipment/latest")
-def get_latast_shipment():
-    id = max(shipments.keys())
-    return shipments[id]
-
-
 @app.get("/shipment")
-def get_shipment(id: int | None = None) -> dict[str, str | int | float]:
-
+def get_shipment(id: int | None = None) -> dict[str, int | str | float]:
     if id is None:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="details are not found "
+            status_code=status.HTTP_406_NOT_ACCEPTABLE,
+            detail="Id is required for shipment details",
         )
 
-    if not id:
-        id = max(shipments.keys())
-        return shipments[id]
     if id not in shipments:
-        return {"status": 404, "detail": "shipment id not found"}
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Shipment not found in DataBase",
+        )
     return shipments[id]
 
 
-# post request
 @app.post("/shipment")
-def submit_shipment(weight: float, content: str) -> dict[str, int]:
+def create_shipement(weight: float, content: str) -> dict[str, int]:
+
     if weight > 25:
         raise HTTPException(
-            status.HTTP_406_NOT_ACCEPTABLE,
-            detail="weight is greater than 25 Kg please check another item ",
+            status_code=status.HTTP_406_NOT_ACCEPTABLE,
+            detail="Weight Greater than 25 Kg is not acceptable ",
         )
 
-    unique_id = max(shipments.keys()) + 1
-
-    shipments[unique_id] = {"content": content, "weight": weight, "status": "placed"}
-    return {"id": unique_id}
-
-
-@app.post("/shipment2")
-def submit_shipment2(data: dict[str, Any]) -> dict[str, Any]:
-    content = data["content"]
-    weigth = data["weight"]
-    return {"success": 1}
+    new_id = max(shipments.keys()) + 1
+    shipments[new_id] = {"weight": weight, "content": content, "status": "placed"}
+    return {"id": new_id}
 
 
 @app.get("/shipment/{field}")
-def get_shipment_field(field: str, id: int) -> dict[str, Any]:
-    return {field: shipments[id][field]}
+def get_shipment_details(field: str, id: int) -> str:
+    if id not in shipments:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="shipment detail not found"
+        )
+    if field not in shipments[id]:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail=f"field not found for {id}"
+        )
+    return shipments[id][field]
 
+
+@app.put("/shipment")
+def update_shipment(id: int, content: str, weight: float, status: str):
+    if id not in shipments:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="shipment details not found "
+        )
+    if shipments[id]["status"] == "delivered":
+        raise HTTPException(
+            status_code=status.HTTP_406_NOT_ACCEPTABLE,
+            detail="Shipment is already delivered",
+        )
+    shipments[id] = {"weight": weight, "content": content, "status": status}
+    return shipments[id]
+
+
+@app.patch("/shipment")
+def patch_shipment(
+    id: int,
+    body : dict[str , Any]
+):
+    shipment = shipments[id]
+    # if content:
+    #     shipment["content"] = content
+    # if weight:
+    #     shipment["weight"] = weight
+    # if status:
+    #     shipment["status"] = status
+    
+    shipment.update(body)
+    shipments[id] = shipment
+    return shipments[id]
+
+@app.delete("/shipment")
+def delete_shipment(id : int):
+    if id not in shipments:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="shipment not found"
+        )
+    shipment = shipments.pop(id)
+    return {"id" : id , "shipment":shipment}
 
 # scaler API documentations
 @app.get("/scalar", include_in_schema=False)
