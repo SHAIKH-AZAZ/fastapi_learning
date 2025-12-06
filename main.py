@@ -3,6 +3,7 @@ from typing import Any
 import string
 from fastapi import FastAPI, status, HTTPException
 from scalar_fastapi import get_scalar_api_reference
+from schema import Shipment 
 
 shipments = {
     1234: {"weight": 1.2, "content": "glassware", "status": "shipping"},
@@ -34,16 +35,16 @@ def get_shipment(id: int | None = None) -> dict[str, int | str | float]:
 
 
 @app.post("/shipment")
-def create_shipement(weight: float, content: str) -> dict[str, int]:
+def create_shipement(body : Shipment) -> dict[str, int]:
 
-    if weight > 25:
+    if body.weight > 25:
         raise HTTPException(
             status_code=status.HTTP_406_NOT_ACCEPTABLE,
             detail="Weight Greater than 25 Kg is not acceptable ",
         )
 
     new_id = max(shipments.keys()) + 1
-    shipments[new_id] = {"weight": weight, "content": content, "status": "placed"}
+    shipments[new_id] = {"weight": body.weight, "content": body.content, "status": "placed"}
     return {"id": new_id}
 
 
