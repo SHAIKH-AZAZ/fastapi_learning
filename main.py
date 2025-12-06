@@ -44,7 +44,7 @@ def create_shipement(body : Shipment) -> dict[str, int]:
         )
 
     new_id = max(shipments.keys()) + 1
-    shipments[new_id] = {"weight": body.weight, "content": body.content, "status": "placed"}
+    shipments[new_id] = {"weight": body.weight, "content": body.content, "status": "placed" , "destination":body.destination }
     return {"id": new_id}
 
 
