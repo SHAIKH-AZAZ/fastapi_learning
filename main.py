@@ -1,25 +1,26 @@
+from schema import ShipmentCreate,ShipmentRead,ShipmentUpdate,Shipment , ShipmentStatus
+from enum import Enum
 from dataclasses import field
 from typing import Any
-import string
 from fastapi import FastAPI, status, HTTPException
 from scalar_fastapi import get_scalar_api_reference
-from schema import Shipment 
+from database import save ,shipments 
 
-shipments = {
-    1234: {"weight": 1.2, "content": "glassware", "status": "shipping"},
-    1235: {"weight": 2.5, "content": "electronics", "status": "delivered"},
-    1236: {"weight": 0.8, "content": "documents", "status": "in transit"},
-    1237: {"weight": 5.0, "content": "furniture", "status": "processing"},
-    1238: {"weight": 1.5, "content": "books", "status": "shipped"},
-    1239: {"weight": 3.2, "content": "clothing", "status": "out for delivery"},
-    1240: {"weight": 0.5, "content": "accessories", "status": "delivered"},
-}
+# shipments = {
+#     1234: {"weight": 1.2, "content": "glassware", "status": "shipping"},
+#     1235: {"weight": 2.5, "content": "electronics", "status": "delivered"},
+#     1236: {"weight": 0.8, "content": "documents", "status": "in transit"},
+#     1237: {"weight": 5.0, "content": "furniture", "status": "processing"},
+#     1238: {"weight": 1.5, "content": "books", "status": "shipped"},
+#     1239: {"weight": 3.2, "content": "clothing", "status": "out for delivery"},
+#     1240: {"weight": 0.5, "content": "accessories", "status": "delivered"},
+# }
 
 app = FastAPI()
 
 
-@app.get("/shipment")
-def get_shipment(id: int | None = None) -> dict[str, int | str | float]:
+@app.get("/shipment" , response_model=ShipmentRead)
+def get_shipment(id: int | None = None) :
     if id is None:
         raise HTTPException(
             status_code=status.HTTP_406_NOT_ACCEPTABLE,
@@ -31,20 +32,22 @@ def get_shipment(id: int | None = None) -> dict[str, int | str | float]:
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Shipment not found in DataBase",
         )
-    return shipments[id]
+    shipment = shipments[id]
+    return Shipment(
+        **shipment
+    )
 
 
 @app.post("/shipment")
-def create_shipement(body : Shipment) -> dict[str, int]:
-
-    if body.weight > 25:
-        raise HTTPException(
-            status_code=status.HTTP_406_NOT_ACCEPTABLE,
-            detail="Weight Greater than 25 Kg is not acceptable ",
-        )
+def create_shipement(shipment : ShipmentCreate) -> dict[str, int]:
 
     new_id = max(shipments.keys()) + 1
-    shipments[new_id] = {"weight": body.weight, "content": body.content, "status": "placed" , "destination":body.destination }
+    shipments[new_id] = {
+        **shipment.model_dump(),
+        "id":new_id,
+        "status": "placed" , 
+        }
+    save()
     return {"id": new_id}
 
 
@@ -62,7 +65,7 @@ def get_shipment_details(field: str, id: int) -> str:
 
 
 @app.put("/shipment")
-def update_shipment(id: int, content: str, weight: float, status: str):
+def update_shipment(id: int, content: str, weight: float, status: ShipmentStatus):
     if id not in shipments:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="shipment details not found "
@@ -76,21 +79,15 @@ def update_shipment(id: int, content: str, weight: float, status: str):
     return shipments[id]
 
 
-@app.patch("/shipment")
+
+@app.patch("/shipment" , response_model=ShipmentRead)
 def patch_shipment(
     id: int,
-    body : dict[str , Any]
+    body : ShipmentUpdate
 ):
-    shipment = shipments[id]
-    # if content:
-    #     shipment["content"] = content
-    # if weight:
-    #     shipment["weight"] = weight
-    # if status:
-    #     shipment["status"] = status
-    
-    shipment.update(body)
-    shipments[id] = shipment
+    # update shipment data with body 
+    shipments[id].update(body)
+    save()
     return shipments[id]
 
 @app.delete("/shipment")

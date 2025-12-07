@@ -1,0 +1,44 @@
+[
+    {
+        "id": 1234,
+        "weight": 1.2,
+        "content": "glassware",
+        "status": "shipping"
+    },
+    {
+        "id": 1235,
+        "weight": 2.5,
+        "content": "electronics",
+        "status": "delivered"
+    },
+    {
+        "id": 1236,
+        "weight": 0.8,
+        "content": "documents",
+        "status": "in transit"
+    },
+    {
+        "id": 1237,
+        "weight": 5.0,
+        "content": "furniture",
+        "status": "processing"
+    },
+    {
+        "id": 1238,
+        "weight": 1.5,
+        "content": "books",
+        "status": "shipped"
+    },
+    {
+        "id": 1239,
+        "weight": 3.2,
+        "content": "clothing",
+        "status": "out for delivery"
+    },
+    {
+        "id": 1240,
+        "weight": 0.5,
+        "content": "accessories",
+        "status": "delivered"
+    }
+]
