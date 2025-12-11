@@ -9,7 +9,9 @@ class ShipmentStatus (str , Enum):
     in_transit = "in transit"
     out_for_delivery = "out for delivery"
     delivered = "delivered"
-
+    shipping="shipping"
+    shipped="shipped"
+    processing = "processing"
 
 
 class Shipment(BaseModel):

@@ -21,7 +21,7 @@
         "id": 1237,
         "weight": 5.0,
         "content": "furniture",
-        "status": "processing"
+        "status": "shipped"
     },
     {
         "id": 1238,
@@ -40,5 +40,12 @@
         "weight": 0.5,
         "content": "accessories",
         "status": "delivered"
+    },
+    {
+        "content": "first ",
+        "weight": 1.0,
+        "destination": 11526,
+        "id": 1241,
+        "status": "placed"
     }
 ]
