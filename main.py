@@ -5,7 +5,6 @@ from schema import (
     Shipment,
     ShipmentStatus,
 )
-from enum import Enum
 from dataclasses import field
 from typing import Any
 from fastapi import FastAPI, status, HTTPException
@@ -36,13 +35,17 @@ def create_shipement(shipment: ShipmentCreate) -> dict[str, int]:
     return {"id": new_id}
 
 
-
-
 @app.patch("/shipment", response_model=ShipmentRead)
-    # update shipment data with body
-def patch_shipment(id : int , shipment: ShipmentUpdate):
-    shipment = db.update(id , shipment)
+# update shipment data with body
+def patch_shipment(id: int, shipment: ShipmentUpdate):
+    shipment = db.update(id, shipment)
     return shipment
+
+
+@app.get("/allshipments")
+def get_allShipment():
+    result = db.get_all_entries()
+    return result
 
 
 @app.delete("/shipment")
