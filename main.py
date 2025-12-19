@@ -1,58 +1,88 @@
+from contextlib import asynccontextmanager
+from datetime import date, datetime, timedelta
+from sqlmodel import Session
+from starlette.types import HTTPExceptionHandler
+from Database.models import Shipment
+from Database.session import SessionDep, create_db_tables
 from schema import (
     ShipmentCreate,
     ShipmentRead,
     ShipmentUpdate,
-    Shipment,
     ShipmentStatus,
 )
 from dataclasses import field
 from typing import Any
-from fastapi import FastAPI, status, HTTPException
+from fastapi import Depends, FastAPI, status, HTTPException
 from scalar_fastapi import get_scalar_api_reference
-from database import Database
 
 
-app = FastAPI()
+@asynccontextmanager
+async def lifespan_handler(app: FastAPI):
+    create_db_tables()
+    yield
 
-db = Database()
+
+app = FastAPI(
+    lifespan=lifespan_handler,
+)
 
 
 @app.get("/shipment", response_model=ShipmentRead)
-def get_shipment(id: int | None = None):
+def get_shipment(id: int, session: SessionDep):
+    shipment = session.get(Shipment, id)
 
-    shipment = db.get(id)
     if shipment is None:
         raise HTTPException(
-            status_code=status.HTTP_406_NOT_ACCEPTABLE,
-            detail="Id is required for shipment details",
+            status_code=status.HTTP_404_NOT_FOUND, detail="Given id does't exists"
         )
     return shipment
 
 
-@app.post("/shipment")
-def create_shipement(shipment: ShipmentCreate) -> dict[str, int]:
-    new_id = db.create(shipment)
-    return {"id": new_id}
+#### Create a new shipment with content and weight
+@app.post("/shipment", response_model=None)
+def submit_shipment(shipment: ShipmentCreate, session: SessionDep) -> dict[str, int]:
+    new_shipment = Shipment(
+        **shipment.model_dump(),
+        status=ShipmentStatus.placed,
+        estimated_delivery=datetime.now() + timedelta(days=3),
+    )
+    session.add(new_shipment)
+    session.commit()
+    session.refresh(new_shipment)
+
+    return {"id": new_shipment.id}
 
 
-@app.patch("/shipment", response_model=ShipmentRead)
 # update shipment data with body
-def patch_shipment(id: int, shipment: ShipmentUpdate):
-    shipment = db.update(id, shipment)
+@app.patch("/shipment", response_model=ShipmentRead)
+def update_shipment(id: int, shipment_update: ShipmentUpdate, session: SessionDep):
+    # update data with give field
+    update = shipment_update.model_dump(exclude_none=True)
+
+    if not update:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="No Data provided to update"
+        )
+    shipment = session.get(Shipment , id)
+    shipment.sqlmodel_update(update)
+    
+    session.add(shipment)
+    session.commit()
+    session.refresh(shipment)
+    
     return shipment
 
 
-@app.get("/allshipments")
-def get_allShipment():
-    result = db.get_all_entries()
-    return result
-
 
 @app.delete("/shipment")
-def delete_shipment(id: int):
-    db.delete(id)
+def delete_shipment(id: int, session: SessionDep) -> dict[str , str] :
+    # remove from dateabse 
+    session.delete(session.get(Shipment , id))
+    session.commit()
 
-    return {"id": id}
+    return {"detail" : f"Shipment with id #{id} is deleted "}
+
+
 
 
 # scaler API documentations
