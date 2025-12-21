@@ -28,8 +28,8 @@ app = FastAPI(
 
 
 @app.get("/shipment", response_model=ShipmentRead)
-def get_shipment(id: int, session: SessionDep):
-    shipment = session.get(Shipment, id)
+async def get_shipment(id: int, session: SessionDep):
+    shipment = await session.get(Shipment, id)
 
     if shipment is None:
         raise HTTPException(
