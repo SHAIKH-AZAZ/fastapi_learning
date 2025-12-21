@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta
-from fastapi import APIRouter, Depends, HTTPException,status
+from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.dependencies.models import Dependant
 
 from app.Database.models import ShipmentStatus
@@ -9,11 +9,11 @@ from app.api.schema.shipment import ShipmentCreate, ShipmentRead, ShipmentUpdate
 from app.service.service import ShipmentService
 
 
+router = APIRouter(prefix="/shipment", tags=["Shipment"])
 
-router = APIRouter()
 
-@router.get("/shipment", response_model=ShipmentRead )
-async def get_shipment(id: int,  service: ServiceDep):
+@router.get("/", response_model=ShipmentRead)
+async def get_shipment(id: int, service: ServiceDep):
     shipment = await service.get(id)
 
     if shipment is None:
@@ -24,14 +24,18 @@ async def get_shipment(id: int,  service: ServiceDep):
 
 
 #### Create a new shipment with content and weight
-@router.post("/shipment")
+@router.post("/")
 async def submit_shipment(shipment: ShipmentCreate, service: ServiceDep) -> Shipment:
-    return await service.add(shipment) 
+    return await service.add(shipment)
 
 
 # update shipment data with body
-@router.patch("/shipment", response_model=ShipmentRead)
-async def update_shipment(id: int, shipment_update: ShipmentUpdate, service: ServiceDep):
+@router.patch("/", response_model=ShipmentRead)
+async def update_shipment(
+    id: int,
+    shipment_update: ShipmentUpdate,
+    service: ServiceDep,
+):
     # update data with give field
     update = shipment_update.model_dump(exclude_none=True)
 
@@ -39,18 +43,15 @@ async def update_shipment(id: int, shipment_update: ShipmentUpdate, service: Ser
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="No Data provided to update"
         )
-    
-    shipment = await service.update(id ,update)
-    
+
+    shipment = await service.update(id, update)
+
     return shipment
 
 
-
-@router.delete("/shipment")
-async def delete_shipment(id: int, service: ServiceDep) -> dict[str , str] :
-    # remove from dateable 
+@router.delete("/")
+async def delete_shipment(id: int, service: ServiceDep) -> dict[str, str]:
+    # remove from dateable
     await service.delete(id)
 
-    return {"detail" : f"Shipment with id #{id} is deleted "}
-
-
+    return {"detail": f"Shipment with id #{id} is deleted "}
