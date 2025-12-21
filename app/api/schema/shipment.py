@@ -2,8 +2,9 @@ from datetime import datetime
 from importlib.resources._functional import contents
 from enum import Enum
 from random import randint
+from typing import Optional
 from pydantic import BaseModel , Field
-from Database.models import ShipmentStatus
+from app.Database.models import ShipmentStatus
 
 
 
@@ -21,6 +22,9 @@ class ShipmentRead(BaseShipment):
 class ShipmentCreate(BaseShipment):
     pass
 
-class ShipmentUpdate(BaseShipment):
-    status: ShipmentStatus |None = Field(default=None)
-    estimated_delivery: datetime | None = Field(default=None)
+class ShipmentUpdate(BaseModel):
+    content: Optional[str] = None
+    weight: Optional[float] = Field(default=None, le=25)
+    destination: Optional[int] = None
+    status: Optional[ShipmentStatus] = None
+    estimated_delivery: Optional[datetime] = None

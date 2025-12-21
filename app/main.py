@@ -1,19 +1,10 @@
 from contextlib import asynccontextmanager
-from datetime import date, datetime, timedelta
-from sqlmodel import Session
-from starlette.types import HTTPExceptionHandler
-from Database.models import Shipment
-from Database.session import SessionDep, create_db_tables
-from app.api.schema.shipment import (
-    ShipmentCreate,
-    ShipmentRead,
-    ShipmentUpdate,
-    ShipmentStatus,
-)
-from dataclasses import field
-from typing import Any
-from fastapi import Depends, FastAPI, status, HTTPException
+
+
+
+from fastapi import FastAPI
 from scalar_fastapi import get_scalar_api_reference
+from app.Database.session import create_db_tables
 from app.api.router import router
 
 @asynccontextmanager

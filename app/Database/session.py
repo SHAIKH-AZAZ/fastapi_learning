@@ -2,9 +2,8 @@ from fastapi import Depends
 from typing_extensions import Annotated
 from sqlmodel import SQLModel
 from sqlalchemy.ext.asyncio import create_async_engine , AsyncSession
-from sqlalchemy.orm import async_sessionmaker
+from sqlalchemy.ext.asyncio import async_sessionmaker
 from app.config import settings
-from models import Shipment
 
 engine = create_async_engine(
     url=settings.POSTGRES_URL,

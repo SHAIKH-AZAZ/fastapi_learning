@@ -1,8 +1,7 @@
 import datetime
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.Database.models import Shipment, ShipmentStatus
-from app.api.schema.shipment import ShipmentUpdate
-from app.main import ShipmentCreate
+from app.api.schema.shipment import ShipmentCreate, ShipmentUpdate
 from sqlalchemy.exc import NoResultFound
 
 
@@ -28,7 +27,7 @@ class ShipmentService:
         await self.session.refresh(new_shipment)
         return new_shipment
 
-    async def update(self,id:int, shipment_update: ShipmentUpdate) -> Shipment :
+    async def update(self,id:int, shipment_update: dict) -> Shipment :
         shipment = await self.get(id)
         shipment.sqlmodel_update(shipment_update)
 

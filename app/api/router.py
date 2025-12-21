@@ -40,7 +40,7 @@ async def update_shipment(id: int, shipment_update: ShipmentUpdate, service: Ser
             status_code=status.HTTP_400_BAD_REQUEST, detail="No Data provided to update"
         )
     
-    shipment = await service.update(id ,shipment_update)
+    shipment = await service.update(id ,update)
     
     return shipment
 
