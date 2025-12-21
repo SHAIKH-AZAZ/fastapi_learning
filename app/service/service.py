@@ -3,6 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.Database.models import Shipment, ShipmentStatus
 from app.api.schema.shipment import ShipmentUpdate
 from app.main import ShipmentCreate
+from sqlalchemy.exc import NoResultFound
 
 
 class ShipmentService:
@@ -10,7 +11,11 @@ class ShipmentService:
         self.session = session
 
     async def get(self, id: int) -> Shipment:
-        return await self.session.get(Shipment, id)
+        shipment = await self.session.get(Shipment, id)
+        if shipment is None:
+            raise NoResultFound(f"Shipment {id} not found")
+        return shipment
+        
 
     async def add(self, shipment_create: ShipmentCreate) -> Shipment:
         new_shipment = Shipment(
@@ -23,7 +28,7 @@ class ShipmentService:
         await self.session.refresh(new_shipment)
         return new_shipment
 
-    async def update(self, shipment_update: ShipmentUpdate) -> Shipment:
+    async def update(self,id:int, shipment_update: ShipmentUpdate) -> Shipment :
         shipment = await self.get(id)
         shipment.sqlmodel_update(shipment_update)
 
@@ -34,5 +39,6 @@ class ShipmentService:
         return shipment
 
     async def delete(self, id: int):
-        await self.session.delete(await self.get(id))
+        shipment = await self.get(id)
+        await self.session.delete(shipment)
         await self.session.commit()
