@@ -1,4 +1,5 @@
 from typing import ClassVar
+from pydantic import EmailStr
 from rich.table import Table
 from datetime import datetime
 from enum import Enum
@@ -25,3 +26,12 @@ class Shipment(SQLModel, table=True):
     destination: int
     status: ShipmentStatus
     estimated_delivery: datetime 
+
+
+class Seller(SQLModel , table= True):
+    
+    id : int = Field(default=None , primary_key=True)
+    name: str
+    
+    email: EmailStr
+    password_hash: str

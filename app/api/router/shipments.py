@@ -3,17 +3,17 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.dependencies.models import Dependant
 
 from app.Database.models import ShipmentStatus
-from app.Database.session import SessionDep, Shipment, get_session
-from app.api.dependencies import ServiceDep
+from app.Database.session import  Shipment, get_session
+from app.api.dependencies import  ShipmentServiceDep
 from app.api.schema.shipment import ShipmentCreate, ShipmentRead, ShipmentUpdate
-from app.service.service import ShipmentService
+from app.service.shipment import ShipmentService
 
 
 router = APIRouter(prefix="/shipment", tags=["Shipment"])
 
 
 @router.get("/", response_model=ShipmentRead)
-async def get_shipment(id: int, service: ServiceDep):
+async def get_shipment(id: int, service: ShipmentServiceDep):
     shipment = await service.get(id)
 
     if shipment is None:
@@ -25,7 +25,7 @@ async def get_shipment(id: int, service: ServiceDep):
 
 #### Create a new shipment with content and weight
 @router.post("/")
-async def submit_shipment(shipment: ShipmentCreate, service: ServiceDep) -> Shipment:
+async def submit_shipment(shipment: ShipmentCreate, service: ShipmentServiceDep) -> Shipment:
     return await service.add(shipment)
 
 
@@ -34,7 +34,7 @@ async def submit_shipment(shipment: ShipmentCreate, service: ServiceDep) -> Ship
 async def update_shipment(
     id: int,
     shipment_update: ShipmentUpdate,
-    service: ServiceDep,
+    service: ShipmentServiceDep,
 ):
     # update data with give field
     update = shipment_update.model_dump(exclude_none=True)
@@ -50,7 +50,7 @@ async def update_shipment(
 
 
 @router.delete("/")
-async def delete_shipment(id: int, service: ServiceDep) -> dict[str, str]:
+async def delete_shipment(id: int, service: ShipmentServiceDep) -> dict[str, str]:
     # remove from dateable
     await service.delete(id)
 
