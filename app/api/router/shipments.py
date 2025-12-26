@@ -3,8 +3,8 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.dependencies.models import Dependant
 
 from app.Database.models import ShipmentStatus
-from app.Database.session import  Shipment, get_session
-from app.api.dependencies import  ShipmentServiceDep
+from app.Database.session import Shipment, get_session
+from app.api.dependencies import SellerDep, ShipmentServiceDep
 from app.api.schema.shipment import ShipmentCreate, ShipmentRead, ShipmentUpdate
 from app.service.shipment import ShipmentService
 
@@ -13,7 +13,11 @@ router = APIRouter(prefix="/shipment", tags=["Shipment"])
 
 
 @router.get("/", response_model=ShipmentRead)
-async def get_shipment(id: int, service: ShipmentServiceDep):
+async def get_shipment(
+    id: int,
+    service: ShipmentServiceDep,
+    _ : SellerDep
+):
     shipment = await service.get(id)
 
     if shipment is None:
@@ -25,8 +29,10 @@ async def get_shipment(id: int, service: ShipmentServiceDep):
 
 #### Create a new shipment with content and weight
 @router.post("/")
-async def submit_shipment(shipment: ShipmentCreate, service: ShipmentServiceDep) -> Shipment:
-    return await service.add(shipment)
+async def submit_shipment(
+    shipment: ShipmentCreate, service: ShipmentServiceDep, seller : SellerDep
+) -> Shipment:
+    return await service.add(shipment ,seller)
 
 
 # update shipment data with body

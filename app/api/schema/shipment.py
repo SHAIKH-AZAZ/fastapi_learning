@@ -3,8 +3,9 @@ from importlib.resources._functional import contents
 from enum import Enum
 from random import randint
 from typing import Optional
+from uuid import UUID
 from pydantic import BaseModel , Field
-from app.Database.models import ShipmentStatus
+from app.Database.models import Seller, ShipmentStatus
 
 
 
@@ -14,6 +15,8 @@ class BaseShipment(BaseModel):
     destination: int
 
 class ShipmentRead(BaseShipment):
+    id: UUID
+    seller : Seller
     status: ShipmentStatus
     estimated_delivery:datetime
     
