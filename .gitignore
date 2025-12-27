@@ -1,2 +1,7 @@
 venv
 __pychache__
+migrations
+*.sqlite3
+*.pyc
+.DS_Store
+.env

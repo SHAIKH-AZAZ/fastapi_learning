@@ -1,8 +1,8 @@
 from typing import ClassVar
-from pydantic import EmailStr
+from pydantic import BaseModel, EmailStr
 from datetime import datetime
 from enum import Enum
-from sqlalchemy import Column
+from sqlalchemy import INTEGER, Column, ARRAY
 from sqlalchemy.dialects import postgresql
 from sqlmodel import Field, Relationship, SQLModel
 from uuid import UUID, uuid4
@@ -43,8 +43,31 @@ class Shipment(SQLModel, table=True):
         },
     )
 
+    delivery_Partner_id: UUID = Field(
+        foreign_key="delivery_partner.id",
+    )
+    created_at: datetime =Field(
+        sa_column=Column(
+            postgresql.TIMESTAMP,
+            default=datetime.now,
+        )
+    )
+    delivery_partner: "DeliveryPartner" = Relationship(
+        back_populates="shipments",
+        sa_relationship_kwargs={
+            "lazy": "selectin",
+        },
+    )
 
-class Seller(SQLModel, table=True):
+
+class User(SQLModel):
+    name: str
+    email: EmailStr
+    password_hash: str = Field(exclude=True)
+
+
+class Seller(User, table=True):
+    __tablename__ = "seller"
 
     id: UUID = Field(
         sa_column=Column(
@@ -53,13 +76,39 @@ class Seller(SQLModel, table=True):
             primary_key=True,
         )
     )
-    name: str
-
-    email: EmailStr
-    password_hash: str
+    address: int
 
     shipments: list[Shipment] = Relationship(
         back_populates="seller",
+        sa_relationship_kwargs={
+            "lazy": "selectin",
+        },
+    )
+
+
+class DeliveryPartner(User, table=True):
+    __tablename__ = "delivery_partner"
+    id: UUID = Field(
+        sa_column=Column(
+            postgresql.UUID,
+            default=uuid4,
+            primary_key=True,
+        )
+    )
+
+    created_at: datetime =Field(
+        sa_column=Column(
+            postgresql.TIMESTAMP,
+            default=datetime.now,
+        )
+    )
+
+    serviceable_zip_codes: list[int] = Field(
+        sa_column=Column(ARRAY(INTEGER)),
+    )
+    max_handling_capacity: int
+    shipments: list[Shipment] = Relationship(
+        back_populates="delivery_partner",
         sa_relationship_kwargs={
             "lazy": "selectin",
         },
