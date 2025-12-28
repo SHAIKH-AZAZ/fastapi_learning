@@ -1,11 +1,12 @@
 from typing import ClassVar
-from pydantic import BaseModel, EmailStr
+from pydantic import EmailStr
 from datetime import datetime
 from enum import Enum
 from sqlalchemy import INTEGER, Column, ARRAY
 from sqlalchemy.dialects import postgresql
 from sqlmodel import Field, Relationship, SQLModel
 from uuid import UUID, uuid4
+
 
 
 class ShipmentStatus(str, Enum):
@@ -46,7 +47,7 @@ class Shipment(SQLModel, table=True):
     delivery_Partner_id: UUID = Field(
         foreign_key="delivery_partner.id",
     )
-    created_at: datetime =Field(
+    created_at: datetime = Field(
         sa_column=Column(
             postgresql.TIMESTAMP,
             default=datetime.now,
@@ -61,13 +62,7 @@ class Shipment(SQLModel, table=True):
 
 
 class User(SQLModel):
-    name: str
-    email: EmailStr
-    password_hash: str = Field(exclude=True)
-
-
-class Seller(User, table=True):
-    __tablename__ = "seller"
+    __abstract__ = True
 
     id: UUID = Field(
         sa_column=Column(
@@ -76,7 +71,22 @@ class Seller(User, table=True):
             primary_key=True,
         )
     )
-    address: int
+
+    name: str
+    email: EmailStr
+    password_hash: str = Field(exclude=True)
+
+
+class Seller(User, table=True):
+    __tablename__ = "seller"  # type: ignore
+
+    id: UUID = Field(
+        sa_column=Column(
+            postgresql.UUID,
+            default=uuid4,
+            primary_key=True,
+        )
+    )
 
     shipments: list[Shipment] = Relationship(
         back_populates="seller",
@@ -87,16 +97,9 @@ class Seller(User, table=True):
 
 
 class DeliveryPartner(User, table=True):
-    __tablename__ = "delivery_partner"
-    id: UUID = Field(
-        sa_column=Column(
-            postgresql.UUID,
-            default=uuid4,
-            primary_key=True,
-        )
-    )
+    __tablename__ = "delivery_partner"  # type: ignore
 
-    created_at: datetime =Field(
+    created_at: datetime = Field(
         sa_column=Column(
             postgresql.TIMESTAMP,
             default=datetime.now,
@@ -113,3 +116,15 @@ class DeliveryPartner(User, table=True):
             "lazy": "selectin",
         },
     )
+
+    @property
+    def active_shipment(self):
+        return [
+            shipment
+            for shipment in self.shipments
+            if shipment.status != ShipmentStatus.delivered
+        ]
+
+    @property
+    def current_handling_capacity(self):
+        return max(0, self.max_handling_capacity - len(self.active_shipment))

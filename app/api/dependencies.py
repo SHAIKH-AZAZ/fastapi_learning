@@ -6,7 +6,7 @@ from app.Database.redis import is_jti_blacklisted
 from app.Database.session import get_session
 from app.core.security import oauth2_scheme_seller, oauth2_scheme_partner
 from app.service.seller import SellerService
-from app.service.shipment import ShipmentService
+from app.service.shipment import DeliveryPartnerService, ShipmentService
 from fastapi import Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -17,12 +17,17 @@ SessionDep: TypeAlias = Annotated[AsyncSession, Depends(get_session)]
 
 # Shipment Service Dependency
 def get_shipment_service(session: SessionDep):
-    return ShipmentService(session)
+    return ShipmentService(session, DeliveryPartnerService(session))
 
 
 # Seller Service Dependency Type
 def get_seller_service(session: SessionDep):
     return SellerService(session)
+
+
+# Delivery Partner Service Dependency Type
+def get_delivery_partner_service(session: SessionDep):
+    return DeliveryPartnerService(session)
 
 
 ### Access Token Dependency Data fetching can be done in the route itself
@@ -56,31 +61,34 @@ async def get_partner_access_token_data(
 ) -> dict:
     return await _get_access_token_data(token)
 
+
 ### LoggedIn seller
 async def get_current_seller(
     token_data: Annotated[dict, Depends(get_seller_access_token_data)],
     session: SessionDep,
 ):
-    seller  = await session.get(Seller, UUID(token_data["user"]["id"]))
+    seller = await session.get(Seller, UUID(token_data["user"]["id"]))
     if seller is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Not Authorized",
         )
-    return 
+    return
+
 
 ### LoggedIn partner
 async def get_current_partner(
     token_data: Annotated[dict, Depends(get_partner_access_token_data)],
     session: SessionDep,
 ):
-    partner =  await session.get(DeliveryPartner, UUID(token_data["user"]["id"]))
+    partner = await session.get(DeliveryPartner, UUID(token_data["user"]["id"]))
     if partner is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Not Authorized",
         )
     return partner
+
 
 ### SELLER DEP
 SellerDep = Annotated[Seller, Depends(get_current_seller)]
@@ -96,3 +104,7 @@ SellerServiceDep = Annotated[SellerService, Depends(get_seller_service)]
 
 # DeliverPartner ServiceDep
 PartnerServiceDep = Annotated[DeliveryPartner, Depends(get_current_partner)]
+
+DeliveryPartnerServiceDep = Annotated[
+    DeliveryPartnerService, Depends(get_delivery_partner_service)
+]

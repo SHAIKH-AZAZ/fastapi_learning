@@ -2,7 +2,11 @@ from typing import Annotated
 from fastapi import APIRouter, Depends
 from fastapi.security import OAuth2PasswordRequestForm
 from app.Database.redis import add_jti_to_blacklist
-from app.api.dependencies import PartnerServiceDep, get_partner_access_token_data
+from app.api.dependencies import (
+    DeliveryPartnerServiceDep,
+    PartnerServiceDep,
+    get_partner_access_token_data,
+)
 from app.api.schema.deliver_partner import (
     DeliveryPartnerCreate,
     DeliveryPartnerRead,
@@ -19,7 +23,7 @@ router = APIRouter(prefix="/partner", tags=["Partner"])
 )
 async def register_delivery_partner(
     seller: DeliveryPartnerCreate,
-    service,
+    service: DeliveryPartnerServiceDep,
 ):
     return await service.add(seller)
 
@@ -27,7 +31,7 @@ async def register_delivery_partner(
 @router.post("/token")
 async def login_delivery_partner(
     request_form: Annotated[OAuth2PasswordRequestForm, Depends()],
-    service,
+    service: DeliveryPartnerServiceDep,
 ):
     token = await service.token(request_form.username, request_form.password)
     return {
@@ -37,13 +41,13 @@ async def login_delivery_partner(
 
 
 ### Update the Delivery Partner details
-@router.post("/")
+@router.post("/", response_model=DeliveryPartnerRead)
 async def update_delivery_partner(
     partner_update: DeliveryPartnerUpdate,
     partner: PartnerServiceDep,
-    service,
+    service: DeliveryPartnerServiceDep,
 ):
-    pass
+    return await service.update(partner.sqlmodel_update(partner_update))
 
 
 ### Logout Delivery Partner
