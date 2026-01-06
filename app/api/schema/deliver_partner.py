@@ -6,7 +6,7 @@ from sqlalchemy import ARRAY, Column
 class BaseDeliveryPartner(BaseModel):
     name: str
     email: EmailStr
-    serviceable_zip_codes: list[int] 
+    serviceable_zip_codes: list[int] | None = None
     max_handling_capacity: int
     
 class DeliveryPartnerRead(BaseDeliveryPartner):

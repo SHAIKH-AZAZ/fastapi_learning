@@ -1,11 +1,12 @@
-from typing import ClassVar, List
+from typing import List
 from pydantic import EmailStr
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
-from sqlalchemy import INTEGER, Column, ARRAY, Nullable
+from sqlalchemy import INTEGER, Column
 from sqlalchemy.dialects import postgresql
-from sqlmodel import Field, Relationship, SQLModel
+from sqlmodel import DateTime, Field, Relationship, SQLModel
 from uuid import UUID, uuid4
+from sqlalchemy.dialects.postgresql import ARRAY
 
 
 class ShipmentStatus(str, Enum):
@@ -16,69 +17,15 @@ class ShipmentStatus(str, Enum):
     shipping = "shipping"
     shipped = "shipped"
     processing = "processing"
+    cancelled = "cancelled"
 
 
-class Shipment(SQLModel, table=True):
-    __tablename__: ClassVar[str] = "shipment"
+### base user model for creating seller and delivery partners
+class User(SQLModel, table=False):
 
-    # Primary key with default values  will be assigned and increased automatically
-    id: UUID = Field(
-        sa_column=Column(
-            postgresql.UUID,
-            default=uuid4,
-            primary_key=True,
-        )
-    )
-    content: str
-    weight: float = Field(le=25)
-    destination: int
-    status: ShipmentStatus = Field(
-        sa_column=Column(
-            postgresql.ENUM(
-                ShipmentStatus,
-                name="shipmentstatus",
-            ),
-            nullable=False,
-            default=ShipmentStatus.placed,
-        )
-    )
-    estimated_delivery: datetime
-
-    seller_id: UUID = Field(foreign_key="seller.id")
-    seller: "Seller" = Relationship(
-        back_populates="shipments",
-        sa_relationship_kwargs={
-            "lazy": "selectin",
-        },
-    )
-
-    delivery_partner_id: UUID | None = Field(
-        default=None,
-        foreign_key="delivery_partner.id",
-    )
-    created_at: datetime = Field(
-        sa_column=Column(
-            postgresql.TIMESTAMP,
-            default=datetime.now,
-        )
-    )
-    delivery_partner: "DeliveryPartner" = Relationship(
-        back_populates="shipments",
-        sa_relationship_kwargs={
-            "lazy": "selectin",
-        },
-    )
-
-
-class User(SQLModel):
-    __abstract__ = True
-
-    id: UUID = Field(
-        sa_column=Column(
-            postgresql.UUID,
-            default=uuid4,
-            primary_key=True,
-        )
+    id: UUID | None = Field(
+        default_factory=uuid4,
+        primary_key=True,
     )
 
     name: str
@@ -86,17 +33,94 @@ class User(SQLModel):
     password_hash: str = Field(exclude=True)
 
 
-class Seller(User, table=True):
-    __tablename__ = "seller"  # type: ignore
+class Shipment(SQLModel, table=True):
+    __tablename__ = "shipment"
 
-    id: UUID = Field(
+    # Primary key with default values  will be assigned and increased automatically
+    id: UUID | None = Field(
         sa_column=Column(
             postgresql.UUID,
-            default=uuid4,
+            default_factory=uuid4,
             primary_key=True,
         )
     )
 
+    created_at: datetime | None = Field(
+        sa_column=Column(DateTime(timezone=True), nullable=False),
+        default_factory=lambda: datetime.now(timezone.utc),
+    )
+
+    client_contact_email: EmailStr
+    client_contact_phone: str
+
+    content: str
+    weight: float = Field(le=25)
+    destination: int
+
+    timeline: list["ShipmentEvent"] = Relationship(
+        back_populates="shipment",
+        sa_relationship_kwargs={"lazy": "selectin"},
+    )
+    seller_id: UUID = Field(foreign_key="seller.id")
+    seller: "Seller" = Relationship(
+        back_populates="shipments",
+        sa_relationship_kwargs={"lazy": "selectin"},
+    )
+
+    estimated_delivery: datetime
+
+    delivery_partner_id: UUID | None = Field(
+        default=None,
+        foreign_key="delivery_partner.id",
+    )
+
+    # check
+    delivery_partner: "DeliveryPartner" = Relationship(
+        back_populates="shipments",
+        sa_relationship_kwargs={
+            "lazy": "selectin",
+        },
+    )
+
+    @property
+    def status(self):
+        return self.timeline[-1].status if len(self.timeline) > 0 else None
+
+
+class ShipmentEvent(SQLModel, table=True):
+    __tablename__ = "shipment_event"
+
+    id: UUID | None = Field(
+        default_factory=uuid4,
+        primary_key=True,
+    )
+    created_at: datetime | None = Field(
+        sa_column=Column(DateTime(timezone=True), nullable=False),
+        default_factory=lambda: datetime.now(timezone.utc),
+    )
+    location: int
+    status: ShipmentStatus
+    description: str | None = Field(default=None)
+
+    shipment_id: UUID = Field(foreign_key="shipment.id")
+    shipment: Shipment = Relationship(
+        back_populates="timeline",
+        sa_relationship_kwargs={
+            "lazy": "selectin",
+        },
+    )
+
+
+class Seller(User, table=True):
+    __tablename__ = "seller"  # type: ignore
+
+    created_at: datetime | None = Field(
+        sa_column=Column(DateTime(timezone=True), nullable=False),
+        default_factory=lambda: datetime.now(timezone.utc),
+    )
+
+    address: str | None = Field(default=None)
+    zip_code: int | None = Field(default=None)
     shipments: list[Shipment] = Relationship(
         back_populates="seller",
         sa_relationship_kwargs={
@@ -108,24 +132,19 @@ class Seller(User, table=True):
 class DeliveryPartner(User, table=True):
     __tablename__ = "delivery_partner"  # type: ignore
 
-    created_at: datetime = Field(
-        sa_column=Column(
-            postgresql.TIMESTAMP,
-            default=datetime.now,
-        )
+    created_at: datetime | None = Field(
+        sa_column=Column(DateTime(timezone=True), nullable=False),
+        default_factory=lambda: datetime.now(timezone.utc),
     )
 
     serviceable_zip_codes: List[int] = Field(
-        default_factory=list,
-        sa_column=Column(ARRAY(INTEGER), nullable=False),
+        default_factory=list, sa_column=Column(ARRAY(INTEGER), nullable=True)
     )
 
     max_handling_capacity: int
     shipments: list[Shipment] = Relationship(
         back_populates="delivery_partner",
-        sa_relationship_kwargs={
-            "lazy": "selectin",
-        },
+        sa_relationship_kwargs={"lazy": "selectin"},
     )
 
     @property
@@ -134,6 +153,7 @@ class DeliveryPartner(User, table=True):
             shipment
             for shipment in self.shipments
             if shipment.status != ShipmentStatus.delivered
+            if shipment.status != ShipmentStatus.cancelled
         ]
 
     @property

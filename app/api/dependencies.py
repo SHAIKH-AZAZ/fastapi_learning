@@ -10,6 +10,7 @@ from app.service.shipment import DeliveryPartnerService, ShipmentService
 from fastapi import Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.service.shipment_event import ShipmentEventService
 from app.utils import decode_access_token
 
 SessionDep: TypeAlias = Annotated[AsyncSession, Depends(get_session)]
@@ -17,7 +18,11 @@ SessionDep: TypeAlias = Annotated[AsyncSession, Depends(get_session)]
 
 # Shipment Service Dependency
 def get_shipment_service(session: SessionDep):
-    return ShipmentService(session, DeliveryPartnerService(session))
+    return ShipmentService(
+        session,
+        DeliveryPartnerService(session),
+        ShipmentEventService(session),
+    )
 
 
 # Seller Service Dependency Type
@@ -42,7 +47,7 @@ async def _get_access_token_data(token: str):
     return data
 
 
-### selller access token data
+### seller access token data
 async def get_seller_access_token_data(
     token: Annotated[
         str,
