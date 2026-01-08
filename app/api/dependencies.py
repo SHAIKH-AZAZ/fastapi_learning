@@ -78,7 +78,7 @@ async def get_current_seller(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Not Authorized",
         )
-    return
+    return seller
 
 
 ### LoggedIn partner

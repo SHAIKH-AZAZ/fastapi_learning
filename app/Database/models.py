@@ -37,21 +37,16 @@ class Shipment(SQLModel, table=True):
     __tablename__ = "shipment"
 
     # Primary key with default values  will be assigned and increased automatically
-    id: UUID | None = Field(
-        sa_column=Column(
-            postgresql.UUID,
+    id: UUID = Field(
             default_factory=uuid4,
             primary_key=True,
         )
-    )
 
-    created_at: datetime | None = Field(
+    created_at: datetime  = Field(
         sa_column=Column(DateTime(timezone=True), nullable=False),
         default_factory=lambda: datetime.now(timezone.utc),
     )
 
-    client_contact_email: EmailStr
-    client_contact_phone: str
 
     content: str
     weight: float = Field(le=25)
@@ -119,8 +114,8 @@ class Seller(User, table=True):
         default_factory=lambda: datetime.now(timezone.utc),
     )
 
-    address: str | None = Field(default=None)
-    zip_code: int | None = Field(default=None)
+    address: str | None = Field(nullable=True)
+    zip_code: int | None = Field(nullable=True)
     shipments: list[Shipment] = Relationship(
         back_populates="seller",
         sa_relationship_kwargs={

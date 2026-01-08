@@ -47,7 +47,7 @@ async def update_delivery_partner(
     partner: PartnerServiceDep,
     service: DeliveryPartnerServiceDep,
 ):
-    return await service.update(partner.sqlmodel_update(partner_update))
+    return await service.update(partner , partner_update)
 
 
 ### Logout Delivery Partner

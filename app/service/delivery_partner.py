@@ -1,8 +1,9 @@
+from ast import Del
 from typing import Sequence
 from fastapi import HTTPException, status
 from sqlmodel import select
 from app.Database.models import DeliveryPartner, Shipment
-from app.api.schema.deliver_partner import DeliveryPartnerCreate
+from app.api.schema.deliver_partner import DeliveryPartnerCreate, DeliveryPartnerUpdate
 from app.service.user import UserService
 
 
@@ -26,19 +27,22 @@ class DeliveryPartnerService(UserService):
 
         for partner in eligible_partners:
             if partner.current_handling_capacity > 0:
-                partner.shipments.append(shipment)
-
-                await self.session.commit()
-                await self.session.refresh(partner)
+                shipment.delivery_partner_id = partner.id
                 return partner
-
+        
         raise HTTPException(
             status_code=status.HTTP_406_NOT_ACCEPTABLE,
-            detail="No Delivery Partner is available at the moment",
+            detail="No Delivery Partner available for this zipcode",
         )
 
     async def token(self, email, password):
         return await self._generate_token(email, password=password)
 
-    async def update(self, partner: DeliveryPartner):
-        return await self._update(partner)
+    async def update(self, partner: DeliveryPartner , partner_update : DeliveryPartnerUpdate,):
+        data = partner_update.model_dump(exclude_none=True)
+        for k , v  in data.items():
+            setattr(partner , k  ,v)
+        
+        await self.session.commit()
+        await self.session.refresh(partner)
+        return partner
