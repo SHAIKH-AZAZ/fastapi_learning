@@ -29,3 +29,10 @@ if config.config_file_name is not None:
 # from myapp import mymodel
 # target_metadata = mymodel.Base.metadata
 target_metadata = SQLModel.metadata
+
+
+
+###  alembic init -t async migrations
+
+## command for creating migration startupss 
+### "alembic revision --autogenerate  -m  "seller " ,,"
